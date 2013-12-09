@@ -7,22 +7,23 @@ Spree::LineItem.class_eval do
 
   old_copy_price = instance_method(:copy_price)
   define_method(:copy_price) do
-    new_price = old_copy_price.bind(self).()
+    
+    old_copy_price.bind(self).call
+    
+    if variant
+      if self.variant.is_on_sale?
+        sale_price = self.variant.sale_price
 
-    if self.variant.is_on_sale?
-      sale_price = self.variant.sale_price
-
-      if (new_price.present? and sale_price <= new_price) or sale_price <= self.price
-        return self.price = sale_price
+        if self.price.present? && sale_price <= self.price
+          return self.price = sale_price
+        elsif self.price.nil? && sale_price <= self.variant.price
+          return self.price = sale_price
+        end
       end
 
-      return self.price = sale_price if new_price.blank?
-    end
-
-    if new_price.nil?
-      self.price = self.variant.price
-    else
-      self.price = new_price
+      if self.price.nil?
+        self.price = self.variant.price
+      end
     end
   end
 end
